@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Memory</title>
+		<meta charset="utf-8"/>
+
+		<link rel="stylesheet" type="text/css" href="css/style.css">
+
+		<script type="text/javascript" language="javascript" src="./js/jquery.js"></script>
+	</head>
+
+	<body>
+		<table>
+			<tr id="top">
+				<td class="left"></td>
+				<td id="menu"><div id="title">Memory</div></div><div id="button-wrapper"><input type="button" id="replay" value="Rejouer"/><input type="button" id="solution" value="Solution"/></div></td>
+				<td class="right"></td>
+			</tr>
+			<tr id="middle">
+				<td class="left"></td>
+				<td id="wrapper"></td>
+				<td class="right"></td>
+			</tr>
+			<tr id="left">
+				<td class="left"></td>
+				<td id="score">Score <span id="scorewrapper"></span> Paires trouvées <span id="foundedpairwrapper"></span> Paires restantes <span id="pairwrapper"></span> Temps <span id="timewrapper"></span></td>
+				<td class="right"></td>
+			</tr>
+		</table>
+
+		<script type="text/javascript" language="javascript">
+			var choosedcards, cards, cardnumber, width, height, clickcount, typenumber, score, foundedpair, pair, minute, centieme, seconde, time, compte, disable;
+
+			init();
+			draw();
+
+			function init() {
+				choosedcards = [];
+				cards = [];
+				cardnumber = 12;
+				width = 4;
+				height = 3;
+
+				clickcount = 0;
+				typenumber = cardnumber / 2;
+				score = 0;
+				pair = typenumber;
+				foundedpair = 0;
+				time = 0;
+				minute = 0;
+				seconde = 0;
+				centieme = 0;
+				disable = false;
+
+				$('#wrapper').html('<table id="cardswrapper"></table>');
+
+				for(var i = 0; i < cardnumber; i++) {
+					cards[i] =  {
+						posx: 0,
+						posy: 0,
+						width: 50,
+						height: 50,
+						id: i,
+						type: i % typenumber,
+						show: false,
+						solved: false,
+
+						render: function() {
+							var content = '';
+
+							//content += '<div class="card" id="' + this.id + '" style="top: ' + this.posx + 'px; left: ' + this.posy + 'px">';
+							content += '<div class="card" id="' + this.id + '" >';
+
+							if(!this.solved && this.show) content += this.type;
+							
+							content += '</div>';
+
+							return content;
+						}
+					}
+				}
+
+				for(var i = cards.length - 1; i >= 1; i--) {
+					var random = Math.floor(Math.random() * (i + 1));
+
+					var save = cards[i];
+					cards[i] = cards[random];
+					cards[random] = save;
+				}
+
+				startTimer();
+			}
+
+			function draw() {
+				var cardswrapper = $('#cardswrapper');
+				var content = '';
+
+				for(var i = 0; i < height; i++) {
+					content += '<tr>';
+
+					for(var j = 0; j < width; j++) {
+						var id = (i * width) + j;
+						var card = cards[id];
+
+						//for(var k = 0; k < cards.length; k++) if(cards[k].id == id) card = cards[k];
+
+						//card.posx = i * card.width;
+						//card.posy = j * card.height;
+
+						var cardrender = card.render();
+
+						content += '<td class="cardwrapper';
+
+						if(card.solved) {
+							content += ' solved';
+						}
+
+						content += '" onClick="cardclicked(' + card.id + ')">' + cardrender +'</td>';
+					}
+
+					content += '</tr>';
+				}
+
+				cardswrapper.html(content);
+
+				var cardheight = document.getElementsByClassName('cardwrapper')[0].offsetHeight;
+				var cardwidth = document.getElementsByClassName('cardwrapper')[0].offsetWidth;
+
+				if(cardheight < cardwidth) {
+					for(var i in document.getElementsByClassName('cardwrapper')) {
+						document.getElementsByClassName('cardwrapper')[i].offsetHeight = cardheight;
+						document.getElementsByClassName('cardwrapper')[i].offsetWidth = cardheight;
+					}
+				}
+				else {
+					for(var i in document.getElementsByClassName('cardwrapper')) {
+						document.getElementsByClassName('cardwrapper')[i].offsetHeight = cardwidth;
+						document.getElementsByClassName('cardwrapper')[i].offsetWidth = cardwidth;
+					}
+				}
+
+				$('#scorewrapper').html(score);
+				$('#foundedpairwrapper').html(foundedpair);
+				$('#pairwrapper').html(pair);
+			}
+
+			function cardclicked(id) {
+				var card;
+
+				for(var k = 0; k < cards.length; k++) if(cards[k].id == id) card = cards[k];
+
+				if(clickcount == 2) {
+					handlethirdclick();;
+				}
+				else {
+					if(card.show == false) {
+						card.show = true;
+
+						choosedcards[clickcount] = card;
+
+						clickcount++;
+						score++;
+					}
+				}
+
+				draw();
+			}
+
+			function handlethirdclick() {
+				if(choosedcards[0].type == choosedcards[1].type) {
+					var flag = true;
+					foundedpair++;
+					pair--;
+
+					choosedcards[0].solved = true;
+					choosedcards[1].solved = true;
+
+					for(var i = 0; i < cardnumber; i++) if(cards[i].solved == false) flag = false;
+
+					if(flag) {
+						$('#wrapper').html('<h1>Win</h1>');
+
+						stopTimer();
+					}
+				}
+
+				for(var i = 0; i < cardnumber; i++) {
+					cards[i].show = false;
+				}
+
+				clickcount = 0;
+			}
+
+			function startTimer() {
+				centieme++;
+
+				if(centieme > 9) {
+					centieme = 0;
+					seconde++;
+				}
+
+				if(seconde > 59) {
+					seconde = 0;
+					minute++;
+				} 
+
+				time = minute + ":" + seconde + ":" + centieme;
+
+				$('#timewrapper').html(time);
+
+				compte = setTimeout('startTimer()', 100);
+			}
+
+			function stopTimer() {
+				clearTimeout(compte);
+			}
+
+			$(document).ready(function() {
+				$('#replay').click(function() {
+					init();
+					draw();
+				});
+
+				$('#solution').click(function() {
+					stopTimer();
+					disable = true;
+
+					for(var i = 0; i < cardnumber; i++) {
+						cards[i].show = true;
+					}
+
+					draw();
+				});
+			});
+		</script>
+	</body>
+</html>
